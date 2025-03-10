@@ -42,7 +42,7 @@ Faça as alterações necessárias no arquivo `new_output.csv` para incluir info
 
 ---
 
-## 3.Análises de Resistência Antiicrobiana  
+## 3.Análises de Resistência Antimicrobiana  
 ### Passo 1: Download do Arquivo  
 Faça o download do arquivo `combined_amr_results.csv` a partir do **CZID**.
 
@@ -82,8 +82,93 @@ Utilize o script `03_graficos_por_especie_patogenica.R` para gerar gráficos de 
 ```  
 
 ---
+***
 
+## BANCO DE DADOS
+O script da criação do banco de dados com o nome 'acmelab_amb' 
+```
+CREATE DATABASE `acmelab_amb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+```
+Após a criação do database foi gerado no total 5 tabelas, a qual essas tabelas são nomeadas de 'ngs' 'amr', 'czid', 'amostra' e 'corrida', sendo ligações entre tabelas de N para 1. A seguir segue o script de criação de cada tabela e o tipo de ligação entre elas. 
+```
+# criaçao da tabela 'ngs' com duas chaves estrageiras 
+-- acmelab_amb.ngs definition
 
-   
+CREATE TABLE `ngs` (
+  `ID_NGS` int NOT NULL AUTO_INCREMENT,
+  `ID_AMOSTRA` int DEFAULT NULL,
+  `ID_CORRIDA` int NOT NULL,
+  `SAMPLE_NAME` text NOT NULL,
+  `PROTOCOL` text NOT NULL,
+  `TOTAL_READS` bigint NOT NULL,
+  `PASSED_FILTERS_CZID` bigint NOT NULL,
+  `PASSED_FILTERS_PERCENT_CZID` float NOT NULL,
+  PRIMARY KEY (`ID_NGS`),
+  KEY `ID_AMOSTRA` (`ID_AMOSTRA`),
+  KEY `ID_CORRIDA` (`ID_CORRIDA`),
+  CONSTRAINT `ngs_ibfk_1` FOREIGN KEY (`ID_AMOSTRA`) REFERENCES `amostra` (`ID_AMOSTRA`) ON DELETE CASCADE,
+  CONSTRAINT `ngs_ibfk_2` FOREIGN KEY (`ID_CORRIDA`) REFERENCES `corrida` (`ID_CORRIDA`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=159 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+# criaçao da tabela 'amr' com uma chaves estrageiras de N para 1 para 'ngs'
+-- acmelab_amb.amr definition
+
+CREATE TABLE `amr` (
+  `ID_AMR` int NOT NULL AUTO_INCREMENT,
+  `ID_NGS` int DEFAULT NULL,
+  `NUM_READS` float NOT NULL,
+  `GENE_FAMILY` text NOT NULL,
+  `DRUG_CLASS` text NOT NULL,
+  `RESISTANCE_MECHANISM` text NOT NULL,
+  PRIMARY KEY (`ID_AMR`),
+  KEY `ID_NGS` (`ID_NGS`),
+  CONSTRAINT `amr_ibfk_1` FOREIGN KEY (`ID_NGS`) REFERENCES `ngs` (`ID_NGS`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=8857 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+# criaçao da tabela 'czid' com uma chaves estrageiras de N para 1 para 'ngs'
+-- acmelab_amb.czid definition
+
+CREATE TABLE `czid` (
+  `ID_CZID` int NOT NULL AUTO_INCREMENT,
+  `ID_NGS` int DEFAULT NULL,
+  `ORGANISMO` text NOT NULL,
+  `ESKAPE` enum('SIM','NAO') NOT NULL,
+  `NUMERO_READS` bigint NOT NULL,
+  `RPM` float NOT NULL,
+  PRIMARY KEY (`ID_CZID`),
+  KEY `ID_NGS` (`ID_NGS`),
+  CONSTRAINT `czid_ibfk_1` FOREIGN KEY (`ID_NGS`) REFERENCES `ngs` (`ID_NGS`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=3161 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+# criaçao da tabela 'amostra' com uma chaves estrageiras de 1 para N para 'ngs'
+-- acmelab_amb.amostra definition
+
+CREATE TABLE `amostra` (
+  `ID_AMOSTRA` int NOT NULL AUTO_INCREMENT,
+  `CODIGO_INTERNO` text NOT NULL,
+  `DATA_COLETA` date DEFAULT NULL,
+  `SEMANA_COLETA` int DEFAULT NULL,
+  `DATA_ENVIO` date DEFAULT NULL,
+  `UF` varchar(2) DEFAULT NULL,
+  `CIDADE` text,
+  `LOCALIDADE` text,
+  PRIMARY KEY (`ID_AMOSTRA`)
+) ENGINE=InnoDB AUTO_INCREMENT=148 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+# criaçao da tabela 'corrida' com uma chaves estrageiras de 1 para N para 'ngs'
+-- acmelab_amb.corrida definition
+
+CREATE TABLE `corrida` (
+  `ID_CORRIDA` int NOT NULL AUTO_INCREMENT,
+  `NOME_CORRIDA` text,
+  `LOTE` int DEFAULT NULL,
+  `DATA_SEQUENCIAMENTO` date DEFAULT NULL,
+  `ILLUMINA_RUN_ID` text,
+  `SEQUENCIADOR` enum('Miseq','Nextseq2000') DEFAULT NULL,
+  `Q30` float DEFAULT NULL,
+  `PF` float DEFAULT NULL,
+  PRIMARY KEY (`ID_CORRIDA`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
 
 
